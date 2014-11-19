@@ -8,6 +8,9 @@ var logging = require('./logging');
 var isProd = nconf.get('NODE_ENV') === 'production';
 var isDev = nconf.get('NODE_ENV') === 'development';
 
+console.log(process.env.IP);
+console.log(process.env.PORT);
+
 if (cluster.isMaster && (isDev || isProd)) {
   // Fork workers.
   _.times(_.min([require('os').cpus().length,2]), function(){
@@ -20,6 +23,7 @@ if (cluster.isMaster && (isDev || isProd)) {
   });
 
 } else {
+
   require('coffee-script'); // remove this once we've fully converted over
   var express = require("express");
   var http = require("http");
@@ -46,6 +50,7 @@ if (cluster.isMaster && (isDev || isProd)) {
     if (err) throw err;
     logging.info('Connected with Mongoose');
   });
+
   autoinc.init(db);
 
   // load schemas & models
@@ -97,6 +102,7 @@ if (cluster.isMaster && (isDev || isProd)) {
   // ------------  Server Configuration ------------
   var publicDir = path.join(__dirname, "/../public");
 
+//  app.set("port", nconf.get('PORT'));
   app.set("port", nconf.get('PORT'));
   middleware.apiThrottle(app);
   app.use(middleware.domainMiddleware(server,mongoose));
@@ -141,9 +147,10 @@ if (cluster.isMaster && (isDev || isProd)) {
   app.use(middleware.errorHandler);
 
   server.on('request', app);
+
   server.listen(app.get("port"), function() {
     return logging.info("Express server listening on port " + app.get("port"));
   });
-
+  
   module.exports = server;
 }
