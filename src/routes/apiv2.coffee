@@ -370,7 +370,7 @@ module.exports = (swagger, v2) ->
     "/groups:GET":
       spec:
         path: '/groups'
-        description: "Get a list of groups"
+        description: "Get a list of groups. The *guilds* type lets you retrieve data about all the guilds you are subscribed to."
         parameters: [
           query 'type',"Comma-separated types of groups to return, eg 'party,guilds,public,tavern'",'string'
         ]
@@ -582,8 +582,13 @@ module.exports = (swagger, v2) ->
     "/challenges:GET":
       spec:
         path: '/challenges'
+<<<<<<< HEAD
         description: "Get a list of challenges"
       middleware: [auth.auth, i18n.getUserLanguage]
+=======
+        description: "Get a list of the challenges created by the guilds you are subscribed to, including Tavern challenges"
+      middleware: [auth.auth]
+>>>>>>> origin/master
       action: challenges.list
 
 
