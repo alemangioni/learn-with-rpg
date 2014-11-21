@@ -42,10 +42,32 @@ habitrpg.controller("RootCtrl", ['$scope', '$rootScope', '$location', 'User', '$
     // styling helpers
     $scope.userLevelStyle = function(user,style){
       style = style || '';
-      if(user && user.backer && user.backer.npc)
-        style += ' label-npc';
+      var npc = (user && user.backer && user.backer.npc) ? user.backer.npc : '';
+      var level = (user && user.contributor && user.contributor.level) ? user.contributor.level : '';
+      style += $scope.userLevelStyleFromLevel(level,npc,style)
+      return style;
+    }
+    $scope.userAdminGlyphiconStyle = function(user,style){
+      style = style || '';
       if(user && user.contributor && user.contributor.level)
-        style += ' label-contributor-'+user.contributor.level;
+        style += $scope.userAdminGlyphiconStyleFromLevel(user.contributor.level,style)
+      return style;
+    }
+    $scope.userLevelStyleFromLevel = function(level,npc,style){
+      style = style || '';
+      if(npc)
+        style += ' label-npc';
+      if(level)
+        style += ' label-contributor-'+level;
+      return style;
+    }
+    $scope.userAdminGlyphiconStyleFromLevel = function(level,style){
+      style = style || '';
+      if(level)
+        if(level==8)
+          style += ' glyphicon glyphicon-star'; // moderator
+        if(level==9)
+          style += ' glyphicon icon-crown'; // staff
       return style;
     }
 
@@ -98,6 +120,10 @@ habitrpg.controller("RootCtrl", ['$scope', '$rootScope', '$location', 'User', '$
 
     $rootScope.dismissAlert = function() {
       $rootScope.set({'flags.newStuff':false});
+    }
+
+    $rootScope.acceptCommunityGuidelines = function() {
+      $rootScope.set({'flags.communityGuidelinesAccepted':true});
     }
 
     $rootScope.notPorted = function(){
@@ -162,7 +188,7 @@ habitrpg.controller("RootCtrl", ['$scope', '$rootScope', '$location', 'User', '$
       if (backer && backer.npc) return backer.npc;
       var l = contrib && contrib.level;
       if (l && l > 0) {
-        var level = (l < 3) ? window.env.t('friend') : (l < 5) ? window.env.t('elite') : (l < 7) ? window.env.t('champion') : (l < 8) ? window.env.t('legendary') : window.env.t('heroic');
+        var level = (l < 3) ? window.env.t('friend') : (l < 5) ? window.env.t('elite') : (l < 7) ? window.env.t('champion') : (l < 8) ? window.env.t('legendary') : (l < 9) ? window.env.t('guardian') : window.env.t('heroic');
         return level + ' ' + contrib.text;
       }
     }

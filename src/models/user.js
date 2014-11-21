@@ -46,7 +46,8 @@ var UserSchema = new Schema({
     rebirthLevel: Number,
     perfect: Number,
     habitBirthday: Boolean,
-    valentine: Number
+    valentine: Number,
+    costumeContest: Boolean
   },
   auth: {
     blocked: Boolean,
@@ -70,7 +71,7 @@ var UserSchema = new Schema({
   },
 
   contributor: {
-    level: Number, // 1-7, see https://trello.com/c/wkFzONhE/277-contributor-gear
+    level: Number, // 1-9, see https://trello.com/c/wkFzONhE/277-contributor-gear https://github.com/HabitRPG/habitrpg/issues/3801
     admin: Boolean,
     sudo: Boolean,
     text: String, // Artisan, Friend, Blacksmith, etc
@@ -115,7 +116,11 @@ var UserSchema = new Schema({
     rebirthEnabled: {type: Boolean, 'default': false},
     freeRebirth: {type: Boolean, 'default': false},
     levelDrops: {type:Schema.Types.Mixed, 'default':{}},
-    chatRevoked: Boolean
+    chatRevoked: Boolean,
+    // Used to track the status of recapture emails sent to each user,
+    // can be 0 - no email sent - 1, 2 or 3 - 3 means no more email will be sent to the user
+    recaptureEmailsPhase: {type: Number, 'default': 0},
+    communityGuidelinesAccepted: {type: Boolean, 'default': false}
   },
   history: {
     exp: Array, // [{date: Date, value: Number}], // big peformance issues if these are defined
@@ -272,7 +277,8 @@ var UserSchema = new Schema({
     tagsCollapsed: {type: Boolean, 'default': false},
     advancedCollapsed: {type: Boolean, 'default': false},
     toolbarCollapsed: {type:Boolean, 'default':false},
-    background: String
+    background: String,
+    webhooks: {type: Schema.Types.Mixed, 'default': {}}
   },
   profile: {
     blurb: String,
@@ -319,6 +325,13 @@ var UserSchema = new Schema({
   }]},
 
   challenges: [{type: 'String', ref:'Challenge'}],
+
+  inbox: {
+    newMessages: {type:Number, 'default':0},
+    blocks: {type:Array, 'default':[]},
+    messages: {type:Schema.Types.Mixed, 'default':{}}, //reflist
+    optOut: {type:Boolean, 'default':false}
+  },
 
   habits:   {type:[TaskSchemas.HabitSchema]},
   dailys:   {type:[TaskSchemas.DailySchema]},
@@ -411,9 +424,10 @@ UserSchema.pre('save', function(next) {
     this.achievements.beastMaster = true
   }
 
-  // TODO remove this after 11/01
-  if (!this.items.pets['JackOLantern-Base'] && moment().isBefore('2014-11-01'))
-    this.items.pets['JackOLantern-Base'] = 5;
+  // EXAMPLE CODE for allowing all existing and new players to be
+  // automatically granted an item during a certain time period:
+  // if (!this.items.pets['JackOLantern-Base'] && moment().isBefore('2014-11-01'))
+    // this.items.pets['JackOLantern-Base'] = 5;
 
   //our own version incrementer
   if (_.isNaN(this._v) || !_.isNumber(this._v)) this._v = 0;
@@ -457,10 +471,10 @@ UserSchema.methods.unlink = function(options, cb) {
 module.exports.schema = UserSchema;
 module.exports.model = mongoose.model("User", UserSchema);
 
-mongoose.model("User").find({'contributor.admin':true},function(err,mods){
-  module.exports.mods = _.map(mods,function(m){
-    var lvl = (m.backer && m.backer.npc) ? 'label-npc' :
-        'label-contributor-' + m.contributor.level;
-    return ' <span class="label ' + lvl + '">'+ m.profile.name + '</span>'
-  });
+mongoose.model("User")
+  .find({'contributor.admin':true})
+  .sort('-contributor.level -backer.npc profile.name')
+  .select('profile contributor backer')
+  .exec(function(err,mods){
+    module.exports.mods = mods
 });

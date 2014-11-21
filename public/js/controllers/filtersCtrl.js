@@ -20,7 +20,7 @@ habitrpg.controller("FiltersCtrl", ['$scope', '$rootScope', 'User', 'Shared',
         tagsSnap = _.object(_.pluck(tagsSnap,'id'), tagsSnap);
         $scope._editing = true;
       }
-    }
+    };
 
     $scope.toggleFilter = function(tag) {
       user.filters[tag.id] = !user.filters[tag.id];

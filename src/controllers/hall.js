@@ -55,15 +55,23 @@ api.updateHero = function(req,res,next) {
     function(member, cb){
       if (!member) return res.json(404, {err: "User not found"});
       member.balance = req.body.balance || 0;
-      if (req.body.contributor.level > (member.contributor && member.contributor.level || 0)) {
+      var newTier = req.body.contributor.level; // tier = level in this context
+      var oldTier = member.contributor && member.contributor.level || 0;
+      if (newTier > oldTier) {
         member.flags.contributor = true;
-        member.balance += (req.body.contributor.level - (member.contributor.level || 0))*.5 // +2 gems per tier
+        var gemsPerTier = {1:3, 2:3, 3:3, 4:4, 5:4, 6:4, 7:4, 8:0, 9:0}; // e.g., tier 5 gives 4 gems. Tier 8 = moderator. Tier 9 = staff
+        var tierDiff = newTier - oldTier; // can be 2+ tier increases at once
+        while (tierDiff) {
+          member.balance += gemsPerTier[newTier] / 4; // balance is in $
+          tierDiff--;
+          newTier--; // give them gems for the next tier down if they weren't aready that tier
+        }
       }
       member.contributor = req.body.contributor;
       member.purchased.ads = req.body.purchased.ads;
       if (member.contributor.level >= 6) member.items.pets['Dragon-Hydra'] = 5;
       if (req.body.itemPath && req.body.itemVal
-        && req.body.itemPath.indexOf('items.')===0
+        && req.body.itemPath.indexOf('items.') === 0
         && User.schema.paths[req.body.itemPath]) {
         shared.dotSet(member, req.body.itemPath, req.body.itemVal); // Sanitization at 5c30944 (deemed unnecessary)
       }
